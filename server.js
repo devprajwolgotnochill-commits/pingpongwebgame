@@ -10,5 +10,5 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 app.use(express.static(path.join(__dirname, "src")));
 
 app.listen(port, () =>
-  console.log($`Server running on http://localhost:{port}`),
+  console.log(`Server running on http://localhost:${port}`),
 );
