@@ -1,0 +1,24 @@
+{
+  "name": "pingpongweb",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devprajwolgotnochill-commits/pingpongwebgame.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/devprajwolgotnochill-commits/pingpongwebgame/issues"
+  },
+  "homepage": "https://github.com/devprajwolgotnochill-commits/pingpongwebgame#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
