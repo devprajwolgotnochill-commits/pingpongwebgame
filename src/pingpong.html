@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <!-- The style is edited by copoilot ai -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Ping Pong</title>
+        <meta name="description" content="Classic Ping Pong game built with C++ and WebAssembly">
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            html, body {
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+            }
+
+            body {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            }
+
+            #game-container {
+                position: relative;
+                width: 100vw;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            }
+
+            canvas {
+                display: block;
+                border: 3px solid #00ff88;
+                box-shadow: 0 0 20px rgba(0, 255, 136, 0.5), inset 0 0 10px rgba(0, 255, 136, 0.1);
+                outline: none;
+            }
+
+            #title {
+                position: absolute;
+                top: 20px;
+                font-size: 2.5rem;
+                font-weight: bold;
+                background: linear-gradient(45deg, #00ff88, #00d4ff);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                text-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+                letter-spacing: 2px;
+            }
+
+            #loading {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 1000;
+                opacity: 0;
+                transition: opacity 0.3s;
+            }
+
+            #loading.show {
+                opacity: 1;
+            }
+
+            #spinner {
+                width: 50px;
+                height: 50px;
+                border: 4px solid rgba(0, 255, 136, 0.2);
+                border-top: 4px solid #00ff88;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+            }
+
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+
+            #status {
+                margin-top: 20px;
+                color: #00ff88;
+                font-size: 1rem;
+                text-align: center;
+            }
+
+            #controls {
+                position: absolute;
+                bottom: 20px;
+                display: flex;
+                gap: 15px;
+                opacity: 0;
+                animation: fadeIn 0.5s ease-in 3s forwards;
+            }
+
+            @keyframes fadeIn {
+                to { opacity: 1; }
+            }
+            
+            button {
+                background: linear-gradient(135deg, #00ff88, #00d4ff);
+                border: none;
+                color: #0f0f1e;
+                padding: 10px 20px;
+                font-size: 0.9rem;
+                font-weight: 600;
+                border-radius: 5px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+            }
+
+            button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 0 25px rgba(0, 255, 136, 0.6);
+            }
+
+            button:active {
+                transform: translateY(0);
+            }
+        </style>
+    </head>
+    <body>
+        <div id="game-container">
+            <div id="title">PING PONG</div>
+            <canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
+            <div id="loading" class="show">
+                <div id="spinner"></div>
+                <div id="status">Loading game...</div>
+            </div>
+            <div id="controls">
+                <button onclick="Module.requestFullscreen(!1,!1)">⛶ FULLSCREEN</button>
+                <button onclick="toggleAudio()" id="btn-audio">🔇 MUTE</button>
+            </div>
+        </div>
+
+        <script>
+            const audioContextList = [];
+            const audioBtn = document.querySelector("#btn-audio");
+            const canvas = document.querySelector("#canvas");
+            const loadingDiv = document.querySelector("#loading");
+            const statusDiv = document.querySelector("#status");
+
+            function toggleAudio() {
+                let shouldMute = false;
+                audioContextList.forEach(ctx => {
+                    if (ctx.state === "suspended") {
+                        ctx.resume();
+                        shouldMute = true;
+                    } else if (ctx.state === "running") {
+                        ctx.suspend();
+                    }
+                });
+                audioBtn.textContent = shouldMute ? "🔇 MUTE" : "🔈 RESUME";
+            }
+
+            self.AudioContext = new Proxy(self.AudioContext, {
+                construct(target, args) {
+                    const ctx = new target(...args);
+                    audioContextList.push(ctx);
+                    if (ctx.state === "suspended") {
+                        audioBtn.textContent = "🔈 RESUME";
+                    }
+                    return ctx;
+                }
+            });
+
+            var Module = {
+                preRun: [],
+                postRun: [],
+                print: function() {
+                    return function(text) {
+                        if (arguments.length > 1) {
+                            text = Array.prototype.slice.call(arguments).join(" ");
+                        }
+                        console.log(text);
+                    };
+                }(),
+                printErr: function(text) {
+                    if (arguments.length > 1) {
+                        text = Array.prototype.slice.call(arguments).join(" ");
+                    }
+                    console.error(text);
+                },
+                canvas: canvas,
+                setStatus: function(text) {
+                    if (text) {
+                        statusDiv.textContent = text;
+                        loadingDiv.classList.add("show");
+                    } else {
+                        loadingDiv.classList.remove("show");
+                    }
+                },
+                totalDependencies: 0,
+                monitorRunDependencies: function(left) {
+                    this.totalDependencies = Math.max(this.totalDependencies, left);
+                    Module.setStatus(
+                        left
+                            ? "Preparing... (" + (this.totalDependencies - left) + "/" + this.totalDependencies + ")"
+                            : ""
+                    );
+                }
+            };
+
+            Module.setStatus("Loading game...");
+            window.onerror = function() {
+                Module.setStatus("An error occurred. Check the console.");
+                Module.setStatus = function(text) {
+                    if (text) Module.printErr("[Error] " + text);
+                };
+            };
+        </script>
+        <script src="pingpong.js" async></script>
+    </body>
+</html>
